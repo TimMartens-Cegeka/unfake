@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>PROTOTYPE — Photo assessment experience</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #17232d;
+      background: #f3f5f2;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      --ink: #17232d;
+      --muted: #58666e;
+      --line: #d8dfdc;
+      --paper: #fff;
+      --green: #145e4b;
+      --green-pale: #e4f3ed;
+      --amber: #80531b;
+      --amber-pale: #fff2dc;
+      --blue: #245c79;
+      --blue-pale: #e7f2f8;
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; min-width: 320px; padding-bottom: 100px; }
+    button { font: inherit; }
+    .topbar {
+      align-items: center;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      padding: 18px max(24px, calc((100vw - 1120px) / 2));
+    }
+    .brand { font-size: 1.1rem; font-weight: 800; letter-spacing: -.04em; }
+    .topbar span { color: var(--muted); font-size: .82rem; }
+    .prototype-note {
+      background: #17232d;
+      color: white;
+      font-size: .78rem;
+      padding: 10px 20px;
+      text-align: center;
+    }
+    main { margin: 0 auto; max-width: 1120px; padding: 34px 24px 48px; }
+    .sample-controls {
+      align-items: center;
+      border: 1px dashed #aab8b1;
+      border-radius: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 28px;
+      padding: 13px 16px;
+    }
+    .sample-controls strong { font-size: .83rem; margin-right: 4px; }
+    .sample-button {
+      background: transparent;
+      border: 1px solid #bcc8c2;
+      border-radius: 999px;
+      color: var(--ink);
+      cursor: pointer;
+      font-size: .8rem;
+      padding: 7px 12px;
+    }
+    .sample-button[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: white; }
+    .sample-button:focus-visible, .switcher button:focus-visible { outline: 3px solid #56a9bf; outline-offset: 3px; }
+    .eyebrow { color: var(--muted); font-size: .75rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { font-size: clamp(2rem, 5vw, 3.35rem); letter-spacing: -.055em; line-height: 1.06; margin-bottom: 16px; }
+    h2 { font-size: 1.12rem; letter-spacing: -.02em; }
+    p { color: var(--muted); line-height: 1.6; }
+    .status-chip { border-radius: 999px; display: inline-flex; font-size: .78rem; font-weight: 750; padding: 7px 11px; }
+    .tone-signals { background: var(--green-pale); color: var(--green); }
+    .tone-none { background: #edf0ee; color: #46554e; }
+    .tone-uncertain { background: var(--amber-pale); color: var(--amber); }
+    .panel { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; }
+    .small-label { color: var(--muted); font-size: .73rem; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; }
+    .disclaimer { background: #17232d; border-radius: 14px; color: white; padding: 18px 20px; }
+    .disclaimer p { color: #d4dfdc; margin: 7px 0 0; }
+    .disclaimer strong { font-size: .94rem; }
+    .result-title { margin: 15px 0 10px; }
+    .section-heading { align-items: baseline; display: flex; gap: 12px; justify-content: space-between; }
+    .section-heading p { font-size: .84rem; margin: 0; }
+    .evidence-row { border-top: 1px solid var(--line); display: grid; gap: 8px 20px; grid-template-columns: minmax(130px, .7fr) 1.6fr; padding: 16px 0; }
+    .evidence-row strong { font-size: .9rem; }
+    .evidence-row p { font-size: .88rem; margin: 0; }
+    .limits-row { align-items: start; border-top: 1px solid var(--line); display: grid; gap: 10px; grid-template-columns: 170px 1fr; padding: 17px 0; }
+    .limits-row p { font-size: .87rem; margin: 0; }
+    .plain-link { color: var(--blue); font-size: .87rem; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+
+    .layout-a { display: grid; gap: 22px; grid-template-columns: minmax(0, 1.5fr) minmax(250px, .8fr); }
+    .layout-a .hero { grid-column: 1 / -1; padding: clamp(24px, 5vw, 48px); }
+    .layout-a .evidence { padding: 24px; }
+    .layout-a .limits { align-self: start; padding: 22px; }
+    .layout-a .evidence-row { grid-template-columns: 1fr; gap: 6px; }
+
+    .layout-b { display: grid; gap: 22px; grid-template-columns: minmax(0, 1.7fr) minmax(260px, .8fr); }
+    .layout-b .report-head { grid-column: 1 / -1; align-items: end; border-bottom: 2px solid var(--ink); display: flex; gap: 28px; justify-content: space-between; padding: 0 0 22px; }
+    .layout-b .report-head h1 { font-size: clamp(1.8rem, 4vw, 2.75rem); margin: 10px 0 0; max-width: 720px; }
+    .layout-b .signal-list { padding: 22px 24px; }
+    .layout-b .signal-list .evidence-row { grid-template-columns: minmax(150px, .7fr) 1.6fr; }
+    .layout-b .reading-guide { padding: 22px; }
+    .layout-b .reading-guide p { font-size: .9rem; }
+    .layout-b .guide-item { border-top: 1px solid var(--line); padding: 14px 0 0; }
+    .layout-b .guide-item + .guide-item { margin-top: 14px; }
+
+    .layout-c { margin: 0 auto; max-width: 780px; }
+    .layout-c .intro { margin-bottom: 30px; text-align: center; }
+    .layout-c .intro h1 { font-size: clamp(2.2rem, 6vw, 3.8rem); margin: 15px auto 12px; max-width: 680px; }
+    .layout-c .story { padding: 26px clamp(20px, 5vw, 42px); }
+    .story-step { display: grid; gap: 18px; grid-template-columns: 38px 1fr; padding: 15px 0 20px; }
+    .story-step + .story-step { border-top: 1px solid var(--line); }
+    .step-number { align-items: center; background: #e9efeb; border-radius: 50%; display: flex; font-size: .78rem; font-weight: 800; height: 34px; justify-content: center; width: 34px; }
+    .story-step h2 { margin: 5px 0 7px; }
+    .story-step p { font-size: .91rem; margin: 0; }
+    .layout-c .closing { margin-top: 18px; }
+
+    .switcher {
+      align-items: center;
+      background: #17232d;
+      border: 1px solid #40515a;
+      border-radius: 999px;
+      bottom: 20px;
+      box-shadow: 0 10px 32px #17232d38;
+      color: white;
+      display: flex;
+      gap: 12px;
+      left: 50%;
+      padding: 8px 12px;
+      position: fixed;
+      transform: translateX(-50%);
+      z-index: 2;
+    }
+    .switcher button { background: transparent; border: 0; border-radius: 50%; color: white; cursor: pointer; font-size: 1.25rem; height: 34px; width: 34px; }
+    .switcher button:hover { background: #354650; }
+    .switch-label { font-size: .8rem; min-width: 180px; text-align: center; }
+    .switch-label span { color: #b9cbc5; }
+
+    @media (max-width: 760px) {
+      main { padding: 24px 16px 36px; }
+      .topbar { padding: 15px 16px; }
+      .layout-a, .layout-b { grid-template-columns: 1fr; }
+      .layout-a .hero, .layout-b .report-head { grid-column: auto; }
+      .layout-b .report-head { align-items: start; flex-direction: column; gap: 13px; }
+      .layout-b .signal-list .evidence-row, .evidence-row, .limits-row { grid-template-columns: 1fr; }
+      .layout-a .hero { padding: 25px; }
+      .switcher { bottom: 12px; max-width: calc(100vw - 24px); }
+      .switch-label { min-width: 150px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="prototype-note">PROTOTYPE — Sample content only; no image is uploaded or analyzed.</div>
+  <header class="topbar">
+    <div class="brand">unfake</div>
+    <span>Photo assessment · concept</span>
+  </header>
+  <main>
+    <div class="sample-controls" role="group" aria-label="Choose an example assessment outcome">
+      <strong>Preview outcome:</strong>
+      <button class="sample-button" type="button" data-case="signals">Signals found</button>
+      <button class="sample-button" type="button" data-case="none">No reliable signals</button>
+      <button class="sample-button" type="button" data-case="uncertain">Inconclusive</button>
+    </div>
+    <section id="app" aria-live="polite"></section>
+  </main>
+  <nav class="switcher" aria-label="Prototype layout variations">
+    <button type="button" data-step="-1" aria-label="Previous layout">‹</button>
+    <div class="switch-label" id="switch-label"></div>
+    <button type="button" data-step="1" aria-label="Next layout">›</button>
+  </nav>
+
+  <script>
+    // Three radically different assessment-result layouts, switchable with ?variant=.
+    const cases = {
+      signals: {
+        tone: "signals",
+        chip: "AI-generation signals found",
+        title: "Some signals suggest AI generation",
+        summary: "This assessment found indicators associated with fully AI-generated imagery. They are evidence to consider, not proof of how this image was made.",
+        content: "Example: image-content patterns are consistent with some AI-generated imagery. This type of signal can be wrong, especially on unfamiliar or altered images.",
+        provenance: "A positive provenance signal may add evidence when present. It does not certify the image or the event it depicts.",
+        reading: "Signals were found, but they cannot establish with certainty how this photo was created."
+      },
+      none: {
+        tone: "none",
+        chip: "No reliable signals found",
+        title: "No reliable AI-generation signals found",
+        summary: "This check did not find reliable evidence of AI generation. That is not confirmation that the photo was camera-original.",
+        content: "No reliable image-content signal was found in this example. Detection can miss generated images, particularly after changes or recompression.",
+        provenance: "No positive provenance signal is available in this example. Missing provenance is common and says nothing about how the image was made.",
+        reading: "A lack of reliable signals is not proof that a photo is real or unedited."
+      },
+      uncertain: {
+        tone: "uncertain",
+        chip: "Insufficient evidence",
+        title: "There isn't enough evidence to assess",
+        summary: "The available information does not support a reliable assessment of AI generation. We won't guess when the evidence is insufficient.",
+        content: "The example does not provide a reliable image-content signal. A detector may be uncertain or unable to assess an image.",
+        provenance: "No positive provenance signal is available in this example. Its absence does not resolve the uncertainty.",
+        reading: "An inconclusive result is different from finding no reliable signals."
+      }
+    };
+    const variants = [
+      { key: "status", name: "Status first", render: renderStatus },
+      { key: "evidence", name: "Evidence ledger", render: renderEvidence },
+      { key: "guide", name: "Guided explanation", render: renderGuide }
+    ];
+    const params = new URLSearchParams(window.location.search);
+    const initialVariant = variants.some(item => item.key === params.get("variant"))
+      ? params.get("variant")
+      : variants[0].key;
+    let variantIndex = variants.findIndex(item => item.key === initialVariant);
+    let caseKey = cases[params.get("case")] ? params.get("case") : "signals";
+
+    function evidenceRows(item) {
+      return `
+        <div class="evidence-row"><strong>Image-content signal</strong><p>${item.content}</p></div>
+        <div class="evidence-row"><strong>Provenance</strong><p>${item.provenance}</p></div>
+      `;
+    }
+
+    function renderStatus(item) {
+      return `
+        <div class="layout-a">
+          <section class="panel hero">
+            <span class="eyebrow">Assessment summary</span>
+            <div><span class="status-chip tone-${item.tone}">${item.chip}</span></div>
+            <h1 class="result-title">${item.title}</h1>
+            <p>${item.summary}</p>
+          </section>
+          <section class="panel evidence">
+            <div class="section-heading"><h2>What contributed</h2><p>Signals, not a verdict</p></div>
+            ${evidenceRows(item)}
+          </section>
+          <aside class="disclaimer limits">
+            <strong>What this check cannot tell you</strong>
+            <p>${item.reading}</p>
+            <p>Post-capture AI editing and enhancement cannot be reliably assessed.</p>
+          </aside>
+        </div>
+      `;
+    }
+
+    function renderEvidence(item) {
+      return `
+        <div class="layout-b">
+          <header class="report-head">
+            <div><span class="eyebrow">Photo assessment · AI generation</span><h1>${item.title}</h1></div>
+            <span class="status-chip tone-${item.tone}">${item.chip}</span>
+          </header>
+          <section class="panel signal-list">
+            <div class="section-heading"><h2>Evidence considered</h2><p>No numeric certainty score</p></div>
+            ${evidenceRows(item)}
+            <div class="limits-row"><strong>Post-capture edits</strong><p>AI enhancement and retouching cannot be reliably assessed by this check.</p></div>
+          </section>
+          <aside class="panel reading-guide" id="meaning">
+            <span class="small-label">How to read this</span>
+            <div class="guide-item"><strong>Assessment</strong><p>${item.summary}</p></div>
+            <div class="guide-item"><strong>Limit</strong><p>${item.reading}</p></div>
+            <p><a class="plain-link" href="#meaning">Understand the limits</a></p>
+          </aside>
+        </div>
+      `;
+    }
+
+    function renderGuide(item) {
+      return `
+        <div class="layout-c">
+          <header class="intro">
+            <span class="eyebrow">Your photo assessment</span>
+            <h1>${item.title}</h1>
+            <span class="status-chip tone-${item.tone}">${item.chip}</span>
+          </header>
+          <section class="panel story">
+            <div class="story-step"><span class="step-number">1</span><div><h2>What we found</h2><p>${item.content}</p></div></div>
+            <div class="story-step"><span class="step-number">2</span><div><h2>What provenance adds</h2><p>${item.provenance}</p></div></div>
+            <div class="story-step"><span class="step-number">3</span><div><h2>What remains unknown</h2><p>${item.reading} Post-capture AI editing and enhancement cannot be reliably assessed.</p></div></div>
+          </section>
+          <aside class="disclaimer closing"><strong>This is an assessment, not an authenticity verdict.</strong><p>${item.summary}</p></aside>
+        </div>
+      `;
+    }
+
+    function render() {
+      const item = cases[caseKey];
+      document.querySelector("#app").innerHTML = variants[variantIndex].render(item);
+      document.querySelector("#switch-label").innerHTML =
+        `<strong>${String.fromCharCode(65 + variantIndex)}</strong> <span>(${variants[variantIndex].name})</span>`;
+      document.querySelectorAll("[data-case]").forEach(button => {
+        button.setAttribute("aria-pressed", String(button.dataset.case === caseKey));
+      });
+    }
+
+    function selectVariant(index) {
+      variantIndex = (index + variants.length) % variants.length;
+      const next = new URLSearchParams(window.location.search);
+      next.set("variant", variants[variantIndex].key);
+      next.set("case", caseKey);
+      window.location.search = next.toString();
+    }
+
+    document.querySelectorAll("[data-case]").forEach(button => {
+      button.addEventListener("click", () => {
+        caseKey = button.dataset.case;
+        const next = new URLSearchParams(window.location.search);
+        next.set("case", caseKey);
+        next.set("variant", variants[variantIndex].key);
+        window.location.search = next.toString();
+      });
+    });
+    document.querySelectorAll("[data-step]").forEach(button => {
+      button.addEventListener("click", () => selectVariant(variantIndex + Number(button.dataset.step)));
+    });
+    document.addEventListener("keydown", event => {
+      if (event.altKey || event.ctrlKey || event.metaKey) return;
+      if (event.target.matches("input, textarea, select, button, [contenteditable='true']")) return;
+      if (event.key === "ArrowLeft") selectVariant(variantIndex - 1);
+      if (event.key === "ArrowRight") selectVariant(variantIndex + 1);
+    });
+
+    render();
+  </script>
+</body>
+</html>
