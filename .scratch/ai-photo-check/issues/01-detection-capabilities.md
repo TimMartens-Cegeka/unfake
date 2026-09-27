@@ -1,6 +1,7 @@
 # Establishing Detection Capabilities and Limits
 
 Type: research
+Status: claimed
 
 ## Question
 
